@@ -1,29 +1,30 @@
-name: Logic Extractor
+name: Generate How-To Docs
 on:
+  push:
+    branches: [ main ]
   pull_request:
-    types: [opened, synchronize] # Runs when PR is created or updated
+    branches: [ main ]
+
+env:
+  # This tells GitHub to use the newer Node.js version now
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  run-logic-extraction:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write # Required to post the comment
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # v4 is actually fine, but the env var above fixes the warning
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5 # Updated from v4 to v5
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
-        run: pip install PyGithub google-genai
-
-      - name: Execute Extraction
+      - name: Run Logic Extraction Script
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Provided by GitHub automatically
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: python scripts/extract_logic.py
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Built-in GitHub secret
+        run: |
+          pip install PyGithub google-genai
+          python scripts/extract_logic.py
