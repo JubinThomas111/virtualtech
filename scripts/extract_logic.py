@@ -2,6 +2,7 @@ import os
 import sys
 from github import Github, Auth
 from google import genai
+import time
 
 def main():
     # 1. Load and Clean Environment Variables
@@ -42,18 +43,21 @@ def main():
 
             Please draft a high-level 'How-to' guide structure based on this intent. 
             Explicitly mention that the technical implementation details are pending.
+            Focus on the why and do not add any back-end details which are not necessary for an admin or an end user of this feature.
             """
             diff_display = "_No relevant code changes (diffs) detected in supported file types._"
         else:
             print("🤖 Code changes found. Consulting Gemini...")
             prompt = f"""
             Act as a Senior Technical Writer. Analyze these code changes and create a 'How-to' guide:
+            Include a short descrition, followed by prerequisites, followed by step-by-step information. Add any notes that are necessary
+            to administer the feature.
             {diff_content}
             """
             diff_display = f"```diff\n{diff_content}\n```"
 
         # 5. Call Gemini
-        response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
         
         # 6. Build the Final Report (Always includes both sections)
         final_report = f"""## 🤖 Automated Documentation Draft
@@ -73,5 +77,15 @@ def main():
     except Exception as e:
         print(f"❌ An error occurred: {e}")
 
+        # 8. Retry logic if quota is reached
+    print("🤖 Consulting Gemini...")
+    response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+except Exception as e:
+    if "429" in str(e):
+        print("⏳ Quota reached. Waiting 30 seconds before retrying...")
+        time.sleep(30)
+        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+    else:
+        raise e
 if __name__ == "__main__":
     main()
