@@ -31,35 +31,48 @@ def main():
                 if file.patch:
                     diff_content += f"\n--- File: {file.filename} ---\n{file.patch}\n"
 
-        # 4. Prepare the Prompt (Handling the "Empty Diff" case)
+        # 4. Prepare the Prompt
         if not diff_content:
-            # If no diff, we ask Gemini to write a guide based on the PR Title/Description instead
             print("⚠️ No code changes found. Generating guide based on PR metadata...")
             prompt = f"""
             Act as a Senior Technical Writer. 
-            The user has not provided specific code changes yet, but here is the Pull Request info:
-            Title: {pr.title}
-            Description: {pr.body}
+            PR Title: {pr.title}
+            PR Description: {pr.body}
 
-            Please draft a high-level 'How-to' guide structure based on this intent. 
-            Explicitly mention that the technical implementation details are pending.
-            Focus on the why and do not add any back-end details which are not necessary for an admin or an end user of this feature.
+            Draft a high-level 'How-to' guide structure. 
+            - Focus on the 'Why' (Purpose).
+            - Do not include back-end details unnecessary for admins or end-users.
+            - Explicitly mention that technical implementation details are pending.
             """
-            diff_display = "_No relevant code changes (diffs) detected in supported file types._"
+            diff_display = "_No relevant code changes detected in supported file types._"
         else:
-            print("🤖 Code changes found. Consulting Gemini...")
+            print("🤖 Code changes found. Preparing analysis...")
             prompt = f"""
-            Act as a Senior Technical Writer. Analyze these code changes and create a 'How-to' guide:
-            Include a short descrition, followed by prerequisites, followed by step-by-step information. Add any notes that are necessary
-            to administer the feature.
+            Act as a Senior Technical Writer. Analyze these code changes and create a professional 'How-to' guide.
+            Use the following structure:
+            1. **Short Description**: What this feature does.
+            2. **Prerequisites**: What is needed before using/administering this.
+            3. **Step-by-step Instructions**: How to use or configure the feature.
+            4. **Administrative Notes**: Necessary notes for system administration.
+            
+            CODE CHANGES:
             {diff_content}
             """
             diff_display = f"```diff\n{diff_content}\n```"
 
-        # 5. Call Gemini
-        response = client.models.generate_content(model="models/gemini-1.5-flash", contents=prompt)
+        # 5. Call Gemini with nested Retry Logic
+        print("🤖 Consulting Gemini 1.5 Flash...")
+        try:
+            response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+        except Exception as e:
+            if "429" in str(e):
+                print("⏳ Quota reached. Waiting 60 seconds (Free Tier reset)...")
+                time.sleep(60)
+                response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+            else:
+                raise e
         
-        # 6. Build the Final Report (Always includes both sections)
+        # 6. Build and Post the Final Report
         final_report = f"""## 🤖 Automated Documentation Draft
 
 {response.text}
@@ -69,7 +82,6 @@ def main():
 {diff_display}
 """
 
-        # 7. Post the comment
         print("✅ Posting report to GitHub...")
         pr.create_issue_comment(final_report)
         print("🚀 Done!")
@@ -77,15 +89,5 @@ def main():
     except Exception as e:
         print(f"❌ An error occurred: {e}")
 
-        # 8. Retry logic if quota is reached
-    print("🤖 Consulting Gemini...")
-    response = client.models.generate_content(model="models/gemini-1.5-flash", contents=prompt)
-except Exception as e:
-    if "429" in str(e):
-        print("⏳ Quota reached. Waiting 30 seconds before retrying...")
-        time.sleep(30)
-        response = client.models.generate_content(model="models/gemini-1.5-flash", contents=prompt)
-    else:
-        raise e
 if __name__ == "__main__":
     main()
