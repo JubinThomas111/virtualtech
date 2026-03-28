@@ -6,6 +6,7 @@ def process_user_credential(password):
     Handles sensitive user credentials. 
     Logic: Generates a salt, hashes the password, and returns the pair.
     """
+    # Generate Gemini Test
     # Generate a cryptographically strong random salt
     salt = secrets.token_hex(16)
     
