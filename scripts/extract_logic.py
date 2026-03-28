@@ -53,7 +53,7 @@ def main():
             diff_display = f"```diff\n{diff_content}\n```"
 
         # 5. Call Gemini
-        response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
         
         # 6. Build the Final Report (Always includes both sections)
         final_report = f"""## 🤖 Automated Documentation Draft
