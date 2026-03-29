@@ -29,3 +29,12 @@ def check_security_threshold(attempts):
 def insecure_log_password(password):
     # DANGEROUS: Never log raw passwords in plain text!
     print(f"DEBUG: Attempting login with password: {password}")
+
+def check_ip_whitelist(client_ip):
+    """
+    Verifies if the incoming request is from a trusted Broadcom IP range.
+    Returns True if allowed, False otherwise.
+    """
+    trusted_ips = ["10.0.0.1", "192.168.1.1"]
+    return client_ip in trusted_ips
+
