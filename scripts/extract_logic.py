@@ -42,12 +42,17 @@ def main():
             diff_display = "_No code changes found._"
         else:
             prompt = f"""
-            Act as a Senior Technical Writer. Create a professional 'How-to' guide.
-            Structure: 
-            1. Short Description
-            2. Prerequisites
-            3. Step-by-step instructions
-            4. Administrative notes
+            Act as a Senior Technical Writer. Create a user-facing 'How-to' guide for the following feature.
+        
+        REQUIRED SECTIONS:
+        1. **Overview**: What is the purpose of this logic?
+        2. **How to use**: Step-by-step instructions for an end-user.
+        3. **Configuration**: What parameters or settings need to be adjusted?
+        
+        RULES:
+        - Do NOT document the Python code itself. 
+        - Document the FUNCTIONAL change (e.g., how the security check works for the user).
+        - Use a professional, helpful tone.
             
             Focus on the user's perspective.
             CODE: {diff_content}
