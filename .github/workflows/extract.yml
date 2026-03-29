@@ -5,26 +5,25 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  # This tells GitHub to use the newer Node.js version now
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # v4 is actually fine, but the env var above fixes the warning
+        # Uses the latest stable version (v4)
+        uses: actions/checkout@v4 
 
       - name: Set up Python
-        uses: actions/setup-python@v5 # Updated from v4 to v5
+        # Uses the latest stable version (v5)
+        uses: actions/setup-python@v5 
         with:
           python-version: '3.10'
 
       - name: Run Logic Extraction Script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Built-in GitHub secret
+          # This automatically gets the PR number from the GitHub event
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           pip install PyGithub google-genai
           python scripts/extract_logic.py
