@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from github import Github, Auth
 from google import genai
 
@@ -17,7 +18,12 @@ def main():
     # 2. Initialize Clients
     auth = Auth.Token(token)
     gh = Github(auth=auth)
-    client = genai.Client(api_key=gemini_key)
+    
+    # FORCING API VERSION V1 TO AVOID 404 NOT FOUND
+    client = genai.Client(
+        api_key=gemini_key,
+        http_options={'api_version': 'v1'}
+    )
     
     try:
         repo = gh.get_repo(repo_name)
@@ -30,48 +36,53 @@ def main():
                 if file.patch:
                     diff_content += f"\n--- File: {file.filename} ---\n{file.patch}\n"
 
-        # 4. Prepare the Prompt (Handling the "Empty Diff" case)
+        # 4. Prepare the Prompt
         if not diff_content:
-            # If no diff, we ask Gemini to write a guide based on the PR Title/Description instead
-            print("⚠️ No code changes found. Generating guide based on PR metadata...")
-            prompt = f"""
-            Act as a Senior Technical Writer. 
-            The user has not provided specific code changes yet, but here is the Pull Request info:
-            Title: {pr.title}
-            Description: {pr.body}
-
-            Please draft a high-level 'How-to' guide structure based on this intent. 
-            Explicitly mention that the technical implementation details are pending.
-            """
-            diff_display = "_No relevant code changes (diffs) detected in supported file types._"
+            prompt = f"Draft a high-level 'How-to' guide for: {pr.title}."
+            diff_display = "_No code changes found._"
         else:
-            print("🤖 Code changes found. Consulting Gemini...")
             prompt = f"""
-            Act as a Senior Technical Writer. Analyze these code changes and create a 'How-to' guide:
-            {diff_content}
+            Act as a Senior Technical Writer. Create a user-facing 'How-to' guide for the following feature.
+        
+        REQUIRED SECTIONS:
+        1. **Overview**: What is the purpose of this logic?
+        2. **How to use**: Step-by-step instructions for an end-user.
+        3. **Configuration**: What parameters or settings need to be adjusted?
+        
+        RULES:
+        - Do NOT document the Python code itself. 
+        - Document the FUNCTIONAL change (e.g., how the security check works for the user).
+        - Use a professional, helpful tone.
+            
+            Focus on the user's perspective.
+            CODE: {diff_content}
             """
             diff_display = f"```diff\n{diff_content}\n```"
 
+        print("🤖 Consulting Gemini 1.5 Flash (v1 Stable)...")
         # 5. Call Gemini
-        response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash", 
+            contents=prompt
+        )
         
-        # 6. Build the Final Report (Always includes both sections)
-        final_report = f"""## 🤖 Automated Documentation Draft
-
-{response.text}
-
----
-### 📝 Raw Technical Diff
-{diff_display}
-"""
+        # 6. Build the Final Report
+        final_report = f"## 🤖 Automated Documentation Draft\n\n{response.text}\n\n---\n### 📝 Raw Technical Diff\n{diff_display}"
 
         # 7. Post the comment
         print("✅ Posting report to GitHub...")
         pr.create_issue_comment(final_report)
-        print("🚀 Done!")
+        print("🚀 Success! Check your PR.")
 
     except Exception as e:
-        print(f"❌ An error occurred: {e}")
+        if "429" in str(e):
+            print("⏳ Rate limit hit. Waiting 60s for reset...")
+            time.sleep(60)
+            # Retry attempt
+            response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+            pr.create_issue_comment(f"## 🤖 Automated Documentation Draft\n\n{response.text}\n\n---\n### 📝 Raw Diff\n{diff_display}")
+        else:
+            print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
     main()
