@@ -43,7 +43,7 @@ def main():
 
         # 4. Generate Documentation with Gemini (Stability Optimized)
         # 1.5-Flash is used here for highest reliability/quota on personal accounts
-        model_id = "gemini-1.5-flash" 
+        model_id = "gemini-1.5-pro" 
         
         prompt = f"""
         Act as a Senior Technical Writer following the Diátaxis documentation framework. 
