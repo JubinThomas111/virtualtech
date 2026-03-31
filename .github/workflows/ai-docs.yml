@@ -1,10 +1,7 @@
-name: 🚀 PROD: AI Documentation
-
+name: AI_DOCS_PROD
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
     branches: [main]
-
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
@@ -12,20 +9,14 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          
-      - name: Install dependencies
-        run: pip install PyGithub google-genai
-        
-      - name: Run AI Script
+      - run: pip install PyGithub google-genai
+      - name: Run_AI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.number }}
+          PR_NUMBER: ${{ github.event.number }}
         run: python scripts/extract_logic.py
