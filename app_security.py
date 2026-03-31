@@ -38,3 +38,4 @@ def check_ip_whitelist(client_ip):
     trusted_ips = ["10.0.0.1", "192.168.1.1"]
     return client_ip in trusted_ips
 
+def verify_broadcom_employee(email): return email.endswith('@broadcom.com')
