@@ -1,4 +1,5 @@
 name: 🚀 PROD: AI Documentation
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -26,6 +27,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # This is the most reliable way to get the PR number in 2026
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.number }}
         run: python scripts/extract_logic.py
