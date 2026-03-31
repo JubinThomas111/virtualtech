@@ -1,8 +1,9 @@
-name: 🚀 LIVE: Enabling automated AI documentation
+name: 🚀 PROD: AI Documentation
 
 on:
   pull_request:
-    branches: [ main ]
+    types: [opened, synchronize, reopened]
+    branches: [main]
 
 jobs:
   generate-docs:
@@ -10,25 +11,21 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      issues: write
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
+      
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
+          
       - name: Install dependencies
-        run: |
-          pip install PyGithub google-genai
-
+        run: pip install PyGithub google-genai
+        
       - name: Run AI Script
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.number }}
         run: python scripts/extract_logic.py
