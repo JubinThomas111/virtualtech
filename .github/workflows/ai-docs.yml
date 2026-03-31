@@ -1,18 +1,18 @@
+cat << 'EOF' > .github/workflows/ai-docs.yml
 name: 🚀 LIVE: Enabling automated AI documentation
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches: [ main ]
 
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
-    # --- ADD THESE 3 LINES ---
     permissions:
       contents: read
       pull-requests: write
       issues: write
-    # -------------------------
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,5 +32,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # UPDATED: Using a more direct context reference
+          PR_NUMBER: ${{ github.event.number }}
         run: python scripts/extract_logic.py
+EOF
