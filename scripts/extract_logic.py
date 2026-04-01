@@ -4,47 +4,62 @@ from github import Github, Auth
 from google import genai
 
 def main():
-    # 1. Setup Environment
+    # 1. Setup
     token = os.getenv("GITHUB_TOKEN")
     gemini_key = os.getenv("GEMINI_API_KEY")
     repo_name = os.getenv("GITHUB_REPOSITORY")
     pr_num = os.getenv("PR_NUMBER")
+    commit_sha = os.getenv("COMMIT_SHA")
     
-    if not all([token, gemini_key, repo_name, pr_num]):
-        print("❌ Error: Missing required environment variables.")
+    if not all([token, gemini_key, repo_name]):
+        print("❌ Error: Missing Critical Credentials.")
         sys.exit(1)
 
     try:
-        # 2. Initialize Clients (Fixed Deprecation)
+        # 2. Initialize
         client = genai.Client(api_key=gemini_key)
-        # Using the new Auth.Token method to avoid warnings
         gh = Github(auth=Auth.Token(token))
-        
         repo = gh.get_repo(repo_name)
-        pr = repo.get_pull(int(pr_num))
 
-        # 3. Extract Diffs
         diff_content = ""
-        for file in pr.get_files():
-            if file.patch:
-                diff_content += f"\n--- File: {file.filename} ---\n{file.patch}\n"
-        
+        target_object = None
+
+        # 3. Context-Aware Extraction
+        if pr_num and pr_num != "None" and pr_num != "":
+            print(f"🔍 Event: Pull Request #{pr_num}")
+            target_object = repo.get_pull(int(pr_num))
+            for file in target_object.get_files():
+                if file.patch:
+                    diff_content += f"\n--- File: {file.filename} ---\n{file.patch}\n"
+        else:
+            print(f"🔍 Event: Merge/Push detected (SHA: {commit_sha[:7]})")
+            # If no PR, get the diff from the specific commit
+            commit = repo.get_commit(commit_sha)
+            target_object = commit
+            for file in commit.files:
+                if file.patch:
+                    diff_content += f"\n--- File: {file.filename} ---\n{file.patch}\n"
+
         if not diff_content:
-            print("⚠️ No changes found.")
+            print("⚠️ No code changes detected.")
             return
 
-        # 4. STABLE MODEL CALL (No gemini-2.0)
-        # We use gemini-1.5-flash as the stable anchor
-        print("🤖 Consulting gemini-1.5-flash...")
-        response = client.models.generate_content(
-            model="gemini-1.5-flash", 
-            contents=f"Act as a Tech Writer. Summarize these changes: {diff_content[:8000]}"
-        )
+        # 4. Gemini Analysis (Stable 1.5-Flash)
+        print("🤖 Generating Documentation...")
+        prompt = f"Act as a Senior Tech Writer. Generate a Diátaxis 'How-to' guide for these changes: {diff_content[:8000]}"
+        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
         
-        # 5. Post Comment
-        comment = f"## 📘 AI Documentation Draft\n\n{response.text}\n\n---\n*Verified Stable Build*"
-        pr.create_issue_comment(comment)
-        print("🚀 Success!")
+        # 5. Smart Posting
+        comment_body = f"## 📘 AI Documentation Draft\n\n{response.text}\n\n---\n*Type: Automated CI/CD Documentation*"
+        
+        if hasattr(target_object, 'create_issue_comment'):
+            # It's a Pull Request
+            target_object.create_issue_comment(comment_body)
+        else:
+            # It's a Commit (Merge to Main)
+            target_object.create_comment(comment_body)
+            
+        print("🚀 Success! Documentation posted.")
 
     except Exception as e:
         print(f"❌ Error: {str(e)}")
