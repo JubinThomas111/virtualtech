@@ -20,7 +20,10 @@ def main():
     try:
         # 2. Initialize Clients
         # Forced to Stable v1 (Removing v1beta to avoid 404 errors)
-        client = genai.Client(api_key=gemini_key)
+        client = genai.Client(
+           api_key=gemini_key,
+           http_options={'api_version': 'v1'} 
+           )
         gh = Github(auth=Auth.Token(token))
         repo = gh.get_repo(repo_name)
 
