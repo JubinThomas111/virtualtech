@@ -22,7 +22,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install Dependencies
-        run: pip install google-genai PyGithub
+        run: pip install --upgrade google-genai PyGithub
 
       - name: Run_AI
         env:
