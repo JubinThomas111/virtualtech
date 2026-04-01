@@ -4,19 +4,21 @@ from github import Github, Auth
 from google import genai
 
 def main():
-    # 1. Environment Setup
-    token = os.getenv("GITHUB_TOKEN")
+    # 1. Environment Setup - Mapping to your Repository Secrets
+    token = os.getenv("GITHUB_TOKEN") 
     gemini_key = os.getenv("GEMINI_API_KEY")
     repo_name = os.getenv("GITHUB_REPOSITORY")
     pr_num = os.getenv("PR_NUMBER")
     commit_sha = os.getenv("GITHUB_SHA")
     
+    # Validation check for your team's demo
     if not all([token, gemini_key, repo_name]):
-        print("❌ Error: Missing Critical Credentials (GITHUB_TOKEN or GEMINI_API_KEY).")
+        print("❌ Error: Missing Critical Credentials.")
+        print(f"DEBUG: Token Active: {bool(token)}, API Key Active: {bool(gemini_key)}")
         sys.exit(1)
 
     try:
-        # 2. Initialize Clients (Forcing Stable v1 API)
+        # 2. Initialize Clients (Forcing Stable v1 API for Broadcom Reliability)
         client = genai.Client(api_key=gemini_key, http_options={'api_version': 'v1'})
         gh = Github(auth=Auth.Token(token))
         repo = gh.get_repo(repo_name)
@@ -34,10 +36,10 @@ def main():
             target_obj = repo.get_commit(commit_sha)
             files = target_obj.files
         else:
-            print("❌ Error: Could not determine PR or Commit context.")
+            print("❌ Error: Could not resolve PR or Commit context.")
             sys.exit(1)
 
-        # 4. Extract Diff Content
+        # 4. Extract Diff Content (The 'Meat' of the documentation)
         for file in files:
             if file.patch:
                 diff_content += f"\n--- File: {file.filename} ---\n{file.patch}\n"
@@ -46,7 +48,7 @@ def main():
             print("⚠️ No relevant code changes found. Skipping AI generation.")
             return
 
-        # 5. Fixed AI Prompt Logic (Clean Triple Quotes)
+        # 5. Production AI Call (Gemini 1.5-Flash Stable)
         print("🤖 Consulting Stable Gemini 1.5-Flash...")
         
         prompt = f"""
@@ -76,20 +78,22 @@ def main():
             print("⚠️ AI returned an empty response.")
             return
 
-        # 6. Post the Comment
-        comment_body = f"## 📘 AI Documentation Draft\n\n{response.text}\n\n---\n*Verified Production Build*"
+        # 6. Post the Automated Comment
+        comment_body = (
+            f"## 📘 AI Documentation Draft\n\n"
+            f"{response.text}\n\n"
+            f"---\n*Verified Production Build | Powered by GH_TOKEN*"
+        )
         
         if hasattr(target_obj, 'create_issue_comment'):
-            # Posts to the "Conversation" tab of a Pull Request
             target_obj.create_issue_comment(comment_body)
+            print("🚀 Success! Posted to Pull Request conversation.")
         else:
-            # Posts to the commit history for merges/pushes
             target_obj.create_comment(comment_body)
-            
-        print("🚀 Success! Comment posted to GitHub.")
+            print("🚀 Success! Posted to Commit history.")
 
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"❌ Critical Error: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":
