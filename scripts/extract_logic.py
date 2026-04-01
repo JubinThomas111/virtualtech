@@ -18,7 +18,7 @@ def main():
 
     try:
         # 2. Initialize Clients
-        # Using the standard client (v1) to avoid 404/Preview errors
+        # Using the standard client to avoid 404/Preview errors
         client = genai.Client(api_key=gemini_key)
         gh = Github(auth=Auth.Token(token))
         
