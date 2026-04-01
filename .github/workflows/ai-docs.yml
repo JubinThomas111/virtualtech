@@ -1,26 +1,36 @@
-name: AI_DOCS_LIVE
+name: AI Documentation Pipeline
+
 on:
   pull_request:
     branches: [main]
   push:
-    branches: [main] # This triggers the AI after the merge occurs
-  workflow_dispatch: # This lets you run it manually from the Actions tab
+    branches: [main]
+  workflow_dispatch: # Allows manual triggering for testing
 
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - run: pip install PyGithub google-genai
+
+      - name: Install Dependencies
+        run: pip install google-genai PyGithub
+
       - name: Run_AI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # DYNAMIC: Checks for PR number, then the event issue number
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          # NEW: Provides the Commit SHA if there is no PR (for Merges)
+          COMMIT_SHA: ${{ github.sha }}
         run: python scripts/extract_logic.py
