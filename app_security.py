@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 # security tests
+# testing logic of the code
 def process_user_credential(password):
     """
     Handles sensitive user credentials. 
