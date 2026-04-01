@@ -43,18 +43,21 @@ def main():
             print("⚠️ No changes found.")
             return
 
-        # 4. AI Generation 
+    # 4. AI Generation 
         print("🤖 Consulting Gemini 1.5-Flash (Production Tier)...")
+        
+        # Using triple quotes (""") allows for multi-line prompts and fixes the SyntaxError
+        prompt = f"""
+        Act as a Senior Technical Writer. 
+        Analyze the following code changes and generate a concise summary.
+        
+        CODE CHANGES:
+        {diff_content[:8000]}
+        """
+
         response = client.models.generate_content(
             model="gemini-1.5-flash", 
-            contents=f"Summarize these code as a Tech Writer:
-            1. Summary - Include 2-3 sentences as a summary of the code
-            2. Prerequisites
-            3. How-to procedure
-            4. Limitations
-            5. References
-            
-            {diff_content[:8000]}"
+            contents=prompt
         )
         
         comment = f"## 📘 AI Documentation Draft\n\n{response.text}\n\n---\n*Verified Production Build*"
