@@ -1,6 +1,6 @@
 import hashlib
 import secrets
-# Testing logic extraction script
+# Testing logic extraction script 2 and 3
 def process_user_credential(password):
     """
     Handles sensitive user credentials. 
