@@ -2,6 +2,9 @@ name: AI_DOCS_LIVE
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main] # This triggers the AI after the merge occurs
+  workflow_dispatch: # This lets you run it manually from the Actions tab
 
 jobs:
   generate-docs:
