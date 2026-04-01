@@ -5,11 +5,11 @@ from google import genai
 
 def main():
     # 1. Environment Setup - Mapping to your Repository Secrets
-    token = os.getenv("GITHUB_TOKEN") 
+    token = os.getenv("GH_TOKEN") 
     gemini_key = os.getenv("GEMINI_API_KEY")
-    repo_name = os.getenv("GITHUB_REPOSITORY")
+    repo_name = os.getenv("GH_REPOSITORY")
     pr_num = os.getenv("PR_NUMBER")
-    commit_sha = os.getenv("GITHUB_SHA")
+    commit_sha = os.getenv("GH_SHA")
     
     # Validation check for your team's demo
     if not all([token, gemini_key, repo_name]):
@@ -19,7 +19,7 @@ def main():
 
     try:
         # 2. Initialize Clients (Forcing Stable v1 API for Broadcom Reliability)
-        client = genai.Client(api_key=gemini_key, http_options={'api_version': 'v1'})
+        client = genai.Client(api_key=gemini_key)
         gh = Github(auth=Auth.Token(token))
         repo = gh.get_repo(repo_name)
 
@@ -70,7 +70,7 @@ def main():
         """
 
         response = client.models.generate_content(
-            model="gemini-1.5-flash", 
+            model="models/gemini-1.5-flash", 
             contents=prompt
         )
         
