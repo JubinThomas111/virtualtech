@@ -44,7 +44,24 @@ def main():
         print("🤖 Consulting Stable Gemini 1.5-Flash...")
         response = client.models.generate_content(
             model="gemini-1.5-flash", 
-            contents=f"Act as a Tech Writer. Summarize these changes: {diff_content[:8000]}"
+            contents=f"Act as a Tech Writer. 
+
+            Act as a Senior Technical Writer. Analyze the following code changes and generate a 
+        concise 'How-to' guide for a developer audience.
+        
+        Format:
+        ### 🎯 Feature Overview
+        (Describe what this change does in 2 sentences)
+        
+        ### 🛠️ Usage / Implementation
+        (Step-by-step instructions or code snippets showing how to use the new logic)
+        
+        ### 📝 Prerequisites
+        (List any new dependencies or requirements)
+        
+        CODE DIFFS:
+        {diff_content}
+            Summarize these changes: {diff_content[:8000]}"
         )
         
         comment = f"## 📘 AI Documentation Draft\n\n{response.text}\n\n---\n*Verified Production Build*"
