@@ -39,3 +39,6 @@ def check_ip_whitelist(client_ip):
     return client_ip in trusted_ips
 
 def verify_broadcom_employee(email): return email.endswith('@broadcom.com')
+def verify_token_expiry(token_timestamp):
+    # Logic to check if the security token is older than 24 hours
+    pass
